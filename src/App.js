@@ -5,28 +5,51 @@ import Notes from "./components/Notes";
 import "./App.css";
 
 const App = () => {
-  const [currentVideoId, setCurrentVideoId] = useState("O6P86uwfdR0");
-
+  const [currentVideoId, setCurrentVideoId] = useState("dO6P86uwfdR0");
+  const [currentTime, setCurrentTime] = useState(0);
+  const [notes, setNotes] = useState([]);
   const [videoInfo, setVideoInfo] = useState({ title: "", description: "" });
+  const playerRef = useRef(null);
 
   useEffect(() => {
-    const fetchVideoDetails = async () => {
-      try {
-        const response = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${currentVideoId}&key=AIzaSyBnvFfZaXf6z6TFFRU5e9lGXcd-nJ4xSCM`
-        );
+    const savedNotes = JSON.parse(localStorage.getItem(currentVideoId)) || [];
+    setNotes(savedNotes);
+
+    fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${currentVideoId}&key=AIzaSyBnvFfZaXf6z6TFFRU5e9lGXcd-nJ4xSCM`
+    )
+      .then((response) => {
         const videoData = response.data.items[0].snippet;
+        console.log(videoData);
         setVideoInfo({
           title: videoData.title,
           description: videoData.description,
         });
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error("Error in fetching video details:", error);
-      }
-    };
-
-    fetchVideoDetails();
+      });
   }, [currentVideoId]);
+
+  const handleTimeUpdate = (time) => {
+    setCurrentTime(time);
+  };
+
+  const handleAddNote = (newNotes) => {
+    localStorage.setItem(currentVideoId, JSON.stringify(newNotes));
+    setNotes(newNotes);
+  };
+
+  const handleUpdateNote = (updatedNotes) => {
+    localStorage.setItem(currentVideoId, JSON.stringify(updatedNotes));
+    setNotes(updatedNotes);
+  };
+
+  const handleDeleteNote = (index) => {
+    const updatedNotes = notes.filter((note, noteIndex) => noteIndex !== index);
+    localStorage.setItem(currentVideoId, JSON.stringify(updatedNotes));
+    setNotes(updatedNotes);
+  };
 
   return (
     <div className="App">
@@ -35,14 +58,26 @@ const App = () => {
         type="text"
         value={currentVideoId}
         onChange={(e) => setCurrentVideoId(e.target.value)}
-        placeholder="Enter any youtube video ID..."
+        placeholder="Enter any youtube video ID.."
       />
-      <VideoPlayer />
+      <VideoPlayer
+        videoId={currentVideoId}
+        onTimeUpdate={handleTimeUpdate}
+        playerRef={playerRef}
+      />
       <div>
         <h2>{videoInfo.title}</h2>
         <p>{videoInfo.description}</p>
       </div>
-      <Notes />
+      <Notes
+        videoId={currentVideoId}
+        currentTime={currentTime}
+        notes={notes}
+        addNote={handleAddNote}
+        updateNote={handleUpdateNote}
+        deleteNote={handleDeleteNote}
+        playerRef={playerRef}
+      />
     </div>
   );
 };
